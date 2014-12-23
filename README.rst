@@ -1,22 +1,23 @@
-===============
-Tethys Datasets
-===============
+=============================
+Tethys Web Processing Service
+=============================
 
-Tethys datasets provides an api for Dataset Services such as CKAN and HydroShare so this data can be incorporated into
-your website easily. It also provides a simple data browser for viewing the data in the Dataset Services you have linked
-to. Though, part of Tethys Platform, this Django app can be installed independently.
+Tethys Web Processing Service (WPS) provides an API for WPS services such as 52 North WPS. WPS services can be
+used to add geoprocessing functionality to web sites that use this app. The Tethys WPS django app also adds
+a development tool that can be used to browse the available processing capabilities. When Tethys WPS is installed,
+it also installs, OWSLib. OWSLib is a Python client for OGC web services and it includes an excellent WPS module.
 
 Installation
 ------------
 
 Tethys Datasets can be installed via pip or downloading the source. To install via pip::
 
-  pip install django-tethys_datasets
+  pip install django-tethys_wps
 
 To install via download::
 
-  git clone https://github.com/CI-WATER/django-tethys_datasets.git
-  cd django-tethys_datasets
+  git clone https://github.com/CI-WATER/django-tethys_wps.git
+  cd django-tethys_wps
   python setup.py install
 
 Django Configuration
@@ -26,26 +27,11 @@ Django Configuration
 
   INSTALLED_APPS = (
       ...
-      'tethys_datasets',
+      'tethys_wps',
   )
 
 2. Include the URLconf in your project urls.py::
 
-  url(r'^datasets/', include('tethys_datasets.urls')),
+  url(r'^wps/', include('tethys_wps.urls')),
 
-3. Add the TETHYS_DATASET_SERVICES parameter to your settings.py with appropriate configuration values for the dataset
-services you wish to plug into::
-
-  TETHYS_DATASET_SERVICES = {
-      'ckan_example': {
-          'ENGINE': 'tethys_datasets.engines.CkanDatasetEngine',
-          'ENDPOINT': 'http://www.example.com/api/3/action',
-          'APIKEY': 'a-R3llY-n1Ce-@Pi-keY',
-      },
-      'hydroshare_example': {
-          'ENGINE': 'tethys_datasets.engines.HydroShareDatasetEngine',
-          'ENDPOINT': 'www.hydroshare.org/api',
-          'USERNAME': 'username',
-          'PASSWORD': 'password'
-      }
-  }
+3. Use the admin console of your site to link WPS services to your site.
