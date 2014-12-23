@@ -1,126 +1,135 @@
-from django.conf import settings
+from urllib2 import HTTPError
+
 from tethys_apps.base.app_base import TethysAppBase
-from .valid_engines import VALID_ENGINES
+
+from owslib.wps import WebProcessingService
+from .models import WebProcessingService as WpsModel
 
 
-class DatasetService:
+def abstract_is_link(process):
     """
-    Used to define dataset services for apps.
-    """
-
-    def __init__(self, name, type, endpoint, apikey=None, username=None, password=None):
-        """
-        Constructor
-        """
-        self.name = name
-
-        # Validate the types
-        if type in VALID_ENGINES:
-            self.type = type
-            self.engine = VALID_ENGINES[type]
-        else:
-            if len(VALID_ENGINES) > 2:
-                comma_separated_types = ', '.join('"{0}"'.format(t) for t in VALID_ENGINES.keys()[:-1])
-                last_type = '"{0}"'.format(VALID_ENGINES.keys()[-1])
-                valid_types_string = '{0}, and {1}'.format(comma_separated_types, last_type)
-            elif len(VALID_ENGINES) == 2:
-                valid_types_string = '"{0}" and "{1}"'.format(VALID_ENGINES.keys()[0], VALID_ENGINES.keys()[1])
-            else:
-                valid_types_string = '"{0}"'.format(VALID_ENGINES.keys()[0])
-
-            raise ValueError('The value "{0}" is not a valid for argument "type" of DatasetService. Valid values for '
-                             '"type" argument include {1}.'.format(type, valid_types_string))
-
-        self.endpoint = endpoint
-        self.apikey = apikey
-        self.username = username
-        self.password = password
-
-    def __repr__(self):
-        """
-        String representation
-        """
-        return '<DatasetService: type={0}, api_endpoint={1}>'.format(self.type, self.endpoint)
-
-
-def initialize_engine_object(engine, endpoint, apikey=None, username=None, password=None):
-    """
-    Initialize a DatasetEngine object from a string that points at the engine class.
-    """
-    # Derive import parts from engine string
-    engine_split = engine.split('.')
-    module_string = '.'.join(engine_split[:-1])
-    engine_class_string = engine_split[-1]
-
-    # Import
-    module = __import__(module_string, fromlist=[engine_class_string])
-    EngineClass = getattr(module, engine_class_string)
-
-    # Create Engine Object
-    engine_instance = EngineClass(endpoint=endpoint,
-                                  apikey=apikey,
-                                  username=username,
-                                  password=password)
-    return engine_instance
-
-
-def get_dataset_engine(name, app_class=None):
-    """
-    Get a dataset engine with the given name.
+    Determine if the process abstract is a link.
 
     Args:
-      name (string): Name of the dataset engine to retrieve.
-      app_class (class): The app class to include in the search for dataset engines.
+      process (owslib.wps.Process): WPS Process object.
 
     Returns:
-      (DatasetEngine): A dataset engine object.
+      (bool): True if abstract is a link, False otherwise.
     """
-    # If the app_class is given, check it first for a dataset engine
-    app_dataset_services = None
+    try:
+        abstract = process.abstract
+    except AttributeError:
+        return False
+
+    if abstract[:4] == 'http':
+        return True
+
+    else:
+        return False
+
+
+def list_wps_service_engines():
+    """
+    Get all wps engines offered.
+
+    Returns:
+      (tuple): A tuple of WPS engine dictionaries.
+    """
+    # Init vars
+    wps_services_list = []
+
+    # If the wps engine cannot be found in the app_class, check settings for site-wide wps engines
+    site_wps_services = WpsModel.objects.all()
+
+    for site_wps_service in site_wps_services:
+
+        # Create OWSLib WebProcessingService engine object
+        wps = WebProcessingService(site_wps_service.endpoint,
+                                   username=site_wps_service.username,
+                                   password=site_wps_service.password,
+                                   verbose=False,
+                                   skip_caps=True)
+
+        # Initialize the object with get capabilities call
+        try:
+            wps.getcapabilities()
+        except HTTPError as e:
+            if e.code == 404:
+                e.msg = 'The WPS service could not be found at given endpoint "{0}" for site WPS service ' \
+                        'named "{1}". Check the configuration of the WPS service in your ' \
+                        'settings.py.'.format(site_wps_service.endpoint, site_wps_service.name)
+                raise e
+            else:
+                raise e
+        except:
+            raise
+
+        wps_services_list.append(wps)
+
+    return wps_services_list
+
+
+def get_wps_service_engine(name, app_class=None):
+    """
+    Get a wps engine with the given name.
+
+    Args:
+      name (string): Name of the wps engine to retrieve.
+      app_class (class): The app class to include in the search for wps engines.
+
+    Returns:
+      (owslib.wps.WebProcessingService): A owslib.wps.WebProcessingService object.
+    """
+    # If the app_class is given, check it first for a wps engine
+    app_wps_services = None
 
     if app_class and issubclass(app_class, TethysAppBase):
-        # Instantiate app class and retrieve dataset services list
+        # Instantiate app class and retrieve wps services list
         app = app_class()
-        app_dataset_services = app.dataset_services()
+        #app_wps_services = app.wps_services()
 
-    if app_dataset_services:
+    if app_wps_services:
         # Search for match
-        for app_dataset_service in app_dataset_services:
+        for app_wps_service in app_wps_services:
 
             # If match is found, initiate engine object
-            if app_dataset_service.name == name:
-                return initialize_engine_object(engine=app_dataset_service.engine,
-                                                endpoint=app_dataset_service.endpoint,
-                                                apikey=app_dataset_service.apikey,
-                                                username=app_dataset_service.username,
-                                                password=app_dataset_service.password)
+            if app_wps_service.name == name:
+                return None
 
-    # If the dataset engine cannot be found in the app_class, check settings for site-wide dataset engines
-    site_dataset_services = None
+    # If the wps engine cannot be found in the app_class, check settings for site-wide wps engines
+    site_wps_services = WpsModel.objects.all()
 
-    if hasattr(settings, 'TETHYS_DATASET_SERVICES'):
-        site_dataset_services = settings.TETHYS_DATASET_SERVICES
-
-    if site_dataset_services:
+    if site_wps_services:
         # Search for match
-        for site_dataset_service_name, site_dataset_service in site_dataset_services.iteritems():
+        for site_wps_service in site_wps_services:
 
             # If match is found initiate engine object
-            if site_dataset_service_name == name:
-                engine = site_dataset_service['ENGINE']
-                endpoint = site_dataset_service['ENDPOINT']
-                apikey = site_dataset_service['APIKEY'] if 'APIKEY' in site_dataset_service else None
-                username = site_dataset_service['USERNAME'] if 'USERNAME' in site_dataset_service else None
-                password = site_dataset_service['PASSWORD'] if 'PASSWORD' in site_dataset_service else None
+            if site_wps_service.name == name:
+                # Create OWSLib WebProcessingService engine object
+                wps = WebProcessingService(site_wps_service.endpoint,
+                                           username=site_wps_service.username,
+                                           password=site_wps_service.password,
+                                           verbose=False,
+                                           skip_caps=True)
 
-                return initialize_engine_object(engine=engine,
-                                                endpoint=endpoint,
-                                                apikey=apikey,
-                                                username=username,
-                                                password=password)
+                # Initialize the object with get capabilities call
+                try:
+                    wps.getcapabilities()
+                except HTTPError as e:
+                    if e.code == 404:
+                        e.msg = 'The WPS service could not be found at given endpoint "{0}" for site WPS service ' \
+                                'named "{1}". Check the configuration of the WPS service in your ' \
+                                'settings.py.'.format(site_wps_service.endpoint, site_wps_service.name)
+                        raise e
+                    else:
+                        raise e
+                except:
+                    raise
 
-    raise NameError('Could not find dataset service with name "{0}". Please check that dataset service with that name '
-                    'exists in settings.py or in your app.py.'.format(name))
+                return wps
+
+    raise NameError('Could not find wps service with name "{0}". Please check that a wps service with that name '
+                    'exists in the admin console or in your app.py.'.format(name))
 
 
 
