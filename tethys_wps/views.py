@@ -36,10 +36,6 @@ def process(request, service, identifier):
     wps = get_wps_service_engine(service)
     wps_process = wps.describeprocess(identifier)
 
-    for output in wps_process.processOutputs:
-        for member in getmembers(output.defaultValue):
-            print(member)
-
     context = {'process': wps_process,
                'service': service,
                'is_link': abstract_is_link(wps_process)}

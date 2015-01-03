@@ -23,7 +23,7 @@
       <div class="list-group">
         {% for input in process.dataInputs %}
           <a class="list-group-item input">
-            <h6 class="list-group-item-heading identifier"><b>{{ input.identifier|upper }}</b> ({{ input.dataType }}): {{ input.title }}</h6>
+            <h6 class="list-group-item-heading identifier"><b>{{ input.identifier }}</b> ({{ input.dataType }}): {{ input.title }}</h6>
             {% if input.minOccurs > 0 %}
               <span class="label label-danger input-required">REQUIRED</span>
             {% else %}
@@ -89,7 +89,7 @@
       <div class="list-group output">
         {% for output in process.processOutputs %}
           <a class="list-group-item input">
-            <h6 class="list-group-item-heading identifier"><b>{{ output.identifier|upper }}</b> ({{ output.dataType }}): {{ output.title }}</h6>
+            <h6 class="list-group-item-heading identifier"><b>{{ output.identifier }}</b> ({{ output.dataType }}): {{ output.title }}</h6>
             <p class="list-group-item-text abstract">{{ output.abstract }}<p>
             {% if output.dataType == 'ComplexData' %}
               <p>Default Value:</p>
