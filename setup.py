@@ -12,7 +12,7 @@ requires = ['django',
             'owslib',
             'lxml']
 
-version = '0.2.0'
+version = '0.3.0'
 setup(
     name='django-tethys_wps',
     version=version,
