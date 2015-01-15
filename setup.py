@@ -8,11 +8,11 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as readme:
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 requires = ['django',
-            'requests',
+            'requests<2.5',
             'owslib',
             'lxml']
 
-version = '0.3.0'
+version = '0.3.1'
 setup(
     name='django-tethys_wps',
     version=version,
