@@ -146,7 +146,7 @@ def get_wps_service_engine(name, app_class=None):
 
                 return activate_wps(wps=wps, endpoint=app_wps_service.endpoint, name=app_wps_service.name)
 
-    # If the wps engine cannot be found in the app_class, check settings for site-wide wps engines
+    # If the wps engine cannot be found in the app_class, check database for site-wide wps engines
     site_wps_services = WpsModel.objects.all()
 
     if site_wps_services:
