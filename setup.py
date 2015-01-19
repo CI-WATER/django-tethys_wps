@@ -9,10 +9,9 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 requires = ['django',
             'requests>=2.4,<2.5',
-            'owslib',
-            'lxml']
+            'owslib']
 
-version = '0.3.1'
+version = '0.3.2'
 setup(
     name='django-tethys_wps',
     version=version,
