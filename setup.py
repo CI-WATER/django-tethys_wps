@@ -11,7 +11,7 @@ requires = ['django',
             'requests>=2.4,<2.5',
             'owslib']
 
-version = '0.3.2'
+version = '0.3.3'
 setup(
     name='django-tethys_wps',
     version=version,
